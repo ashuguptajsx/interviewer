@@ -9,8 +9,10 @@ interface FormFieldProps<T extends FieldValues> {
   name : Path<T>;
   label : string;
   placeholder : string;
-  type? : "text" | "email" | "password"
+  type? : "text" | "email" | "password" | "file"
 } 
+
+
 
 
 const FormField =({ name, control, label, placeholder, type = "text" }: FormFieldProps<T>)=> {
@@ -21,13 +23,11 @@ const FormField =({ name, control, label, placeholder, type = "text" }: FormFiel
         control={control}
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Username</FormLabel>
+            <FormLabel className='label'>{label}</FormLabel>
             <FormControl>
-              <Input placeholder="shadcn" {...field} />
+              <Input className='input' placeholder={placeholder} {...field} type={type} />
             </FormControl>
-            <FormDescription>
-              This is your public display name.
-            </FormDescription>
+        
             <FormMessage />
           </FormItem>
         )}
