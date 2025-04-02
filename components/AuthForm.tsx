@@ -15,37 +15,26 @@ import { signUp, signIn } from "@/lib/actions/auth.actions";
 
 type FormType = "sign-in" | "sign-up";
 
-const authFromSchema = (type: FormType) => {
-  return z.object({
+const authFromSchema = (type: FormType) =>
+  z.object({
     name: type === "sign-up" ? z.string().min(3) : z.string().optional(),
     email: z.string().email(),
     password: z.string().min(3),
   });
-};
 
 const AuthForm = ({ type }: { type: FormType }) => {
   const router = useRouter();
   const formSchema = authFromSchema(type);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-    },
+    defaultValues: { name: "", email: "", password: "" },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       if (type === "sign-up") {
         const { name, email, password } = values;
-
-        const userCredentials = await createUserWithEmailAndPassword(
-          auth,
-          email,
-          password
-        );
-
+        const userCredentials = await createUserWithEmailAndPassword(auth, email, password);
         const result = await signUp({
           uid: userCredentials.user.uid,
           name: name!,
@@ -59,36 +48,36 @@ const AuthForm = ({ type }: { type: FormType }) => {
         }
 
         toast.success("Account created successfully!");
-
-        toast.success("Account created successfully!");
         router.push("/sign-in");
-
       } else {
-
-        const{email, password} = values;
+        const { email, password } = values;
         const userCredentials = await signInWithEmailAndPassword(auth, email, password);
-
         const idToken = await userCredentials.user.getIdToken();
+        console.log("Client idToken:", idToken); // Debug
 
-        if(!idToken){
-          toast.error("Error signing in");
+        if (!idToken) {
+          toast.error("Error retrieving ID token");
           return;
         }
 
-        await signIn ({
-          email, idToken
-        })
+        const result = await signIn({ email, idToken });
+        console.log("Server response:", result); // Debug
 
-        toast.success("Sign in Successfully");
-        router.push("/");
+        if (!result?.success) {
+          toast.error(result?.message || "Error signing in");
+          return;
+        }
 
-        console.log("SIGN IN", values);
         toast.success("Signed in successfully!");
         router.push("/");
       }
-    } catch (error) {
-      console.log(error);
-      toast.error(`There was an error: ${error}`);
+    } catch (error: any) {
+      console.error("Sign-in error:", error);
+      if (error.code?.startsWith("auth/")) {
+        toast.error(`Firebase error: ${error.message}`);
+      } else {
+        toast.error(`Server error: ${error.message || "Unknown error"}`);
+      }
     }
   }
 
@@ -103,18 +92,9 @@ const AuthForm = ({ type }: { type: FormType }) => {
             <h2 className="text-primary-100">Interviewer</h2>
           </div>
           <h3>Practice the job interviews with AI</h3>
-
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="w-full space-y-6 mt-4 form"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="w-full space-y-6 mt-4 form">
             {!isSignIn && (
-              <FormField
-                control={form.control}
-                name="name"
-                label="Name"
-                placeholder="Your Name"
-              />
+              <FormField control={form.control} name="name" label="Name" placeholder="Your Name" />
             )}
             <FormField
               control={form.control}
@@ -138,10 +118,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
       </Form>
       <p className="text-center">
         {isSignIn ? "No account yet?" : "Have an account already?"}{" "}
-        <Link
-          href={!isSignIn ? "/sign-in" : "/sign-up"}
-          className="font-bold text-user-primary ml-1"
-        >
+        <Link href={!isSignIn ? "/sign-in" : "/sign-up"} className="font-bold text-user-primary ml-1">
           {!isSignIn ? "Sign in" : "Sign up"}
         </Link>
       </p>
