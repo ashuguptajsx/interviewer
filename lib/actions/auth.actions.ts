@@ -90,7 +90,7 @@ export async function signIn(params: SignInParams) {
         name: userRecord.displayName || "Unnamed User", // Use displayName or a default
         email: userRecord.email,
       });
-      console.log("Created Firestore document for user:", uid);
+      // console.log("Created Firestore document for user:", uid);
     }
 
     await setSessionCookie(idToken);
@@ -113,13 +113,13 @@ export async function getCurrentUser(): Promise<User | null> {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("session")?.value;
 
-  console.log("Session Cookie in getCurrentUser:", sessionCookie);
+  // console.log("Session Cookie in getCurrentUser:", sessionCookie);
 
   if (!sessionCookie) return null;
 
   try {
     const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
-    console.log("Decoded Session:", decodedClaims);
+    // console.log("Decoded Session:", decodedClaims);
 
     const userRecord = await db.collection("users").doc(decodedClaims.uid).get();
     if (!userRecord.exists) return null;
