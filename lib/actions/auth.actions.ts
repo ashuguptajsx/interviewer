@@ -31,7 +31,6 @@ export async function setSessionCookie(idToken: string) {
   }
 }
 
-
 export async function signUp(params: SignUpParams) {
   const { uid, name, email } = params;
 
@@ -80,16 +79,22 @@ export async function signIn(params: SignInParams) {
   try {
     const userRecord = await auth.getUserByEmail(email);
     if (!userRecord)
-      return { success: false, message: "User does not exist. Create an account." };
+      return {
+        success: false,
+        message: "User does not exist. Create an account.",
+      };
 
     // Check and create Firestore document if it doesn’t exist
     const uid = userRecord.uid;
     const userDoc = await db.collection("users").doc(uid).get();
     if (!userDoc.exists) {
-      await db.collection("users").doc(uid).set({
-        name: userRecord.displayName || "Unnamed User", // Use displayName or a default
-        email: userRecord.email,
-      });
+      await db
+        .collection("users")
+        .doc(uid)
+        .set({
+          name: userRecord.displayName || "Unnamed User", // Use displayName or a default
+          email: userRecord.email,
+        });
       // console.log("Created Firestore document for user:", uid);
     }
 
@@ -97,7 +102,10 @@ export async function signIn(params: SignInParams) {
     return { success: true, message: "Signed in successfully" };
   } catch (error: any) {
     console.error("Sign-in error:", error);
-    return { success: false, message: "Failed to log into account. Please try again." };
+    return {
+      success: false,
+      message: "Failed to log into account. Please try again.",
+    };
   }
 }
 
@@ -121,7 +129,10 @@ export async function getCurrentUser(): Promise<User | null> {
     const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
     // console.log("Decoded Session:", decodedClaims);
 
-    const userRecord = await db.collection("users").doc(decodedClaims.uid).get();
+    const userRecord = await db
+      .collection("users")
+      .doc(decodedClaims.uid)
+      .get();
     if (!userRecord.exists) return null;
 
     return { ...userRecord.data(), id: userRecord.id } as User;
@@ -131,9 +142,41 @@ export async function getCurrentUser(): Promise<User | null> {
   }
 }
 
-
 // Check if user is authenticated
 export async function isAuthenticated() {
   const user = await getCurrentUser();
   return !!user;
+}
+
+export async function getInterviewByUserId(
+  userId: string
+): Promise<Interview[] | null> {
+  const interviews = await db
+    .collection("interviews")
+    .where("userId", "==", userId)
+    .orderBy("createdAt", "desc")
+    .get();
+
+  return interviews.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  })) as Interview[];
+ }
+
+export async function getLatestInterviews(
+  params: GetLatestInterviewsParams
+): Promise<Interview[] | null> {
+  const { userId, limit = 20 } = params;
+  const interviews = await db
+    .collection("interviews")
+    .where("finalized", "==", true)
+    .orderBy("createdAt", "desc")
+    .where("userId", "!=", userId)
+    .limit(limit)
+    .get();
+
+  return interviews.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  })) as Interview[];
 }
