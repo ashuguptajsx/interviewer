@@ -163,20 +163,29 @@ export async function getInterviewByUserId(
   })) as Interview[];
  }
 
-export async function getLatestInterviews(
+ export async function getLatestInterviews(
   params: GetLatestInterviewsParams
 ): Promise<Interview[] | null> {
   const { userId, limit = 20 } = params;
-  const interviews = await db
+  if (!userId) {
+    console.error("userId is null or undefined");
+    return null;
+  }
+  try {
+    const interviews = await db
     .collection("interviews")
-    .where("finalized", "==", true)
     .orderBy("createdAt", "desc")
+    .where("finalized", "==", true)
     .where("userId", "!=", userId)
     .limit(limit)
     .get();
 
-  return interviews.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Interview[];
+    return interviews.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Interview[];
+  } catch (error: any) {
+    console.error("Error fetching latest interviews:", error);
+    return null;
+  }
 }
