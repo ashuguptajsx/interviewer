@@ -5,9 +5,9 @@ import Image from "next/image";
 import InterviewCard from "@/components/InterviewCard";
 import {
   getCurrentUser,
-  getLatestInterviews,
+  
 } from "@/lib/actions/auth.actions";
-import { getInterviewByUserId } from "@/lib/actions/auth.actions";
+import { getInterviewByUserId, getLatestInterviews } from "@/lib/actions/general.action";
 
 const Page = async () => {
   const user = await getCurrentUser();
