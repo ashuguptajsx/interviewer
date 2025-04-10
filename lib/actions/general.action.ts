@@ -1,3 +1,5 @@
+"use server";
+
 import { db } from "@/firebase/admin";
 import { generateObject } from "ai";
 import { feedbackSchema } from "@/constants";
@@ -52,7 +54,7 @@ export async function getInterviewById(id: string): Promise<Interview | null> {
 }
 
 export async function createFeedBack(params: CreateFeedbackParams) {
-  const { interviewId, userId, transcript } = params;
+  const { interviewId, userId, transcript, feedbackId } = params;
 
   try {
     const formattedTranscript = transcript
@@ -61,7 +63,15 @@ export async function createFeedBack(params: CreateFeedbackParams) {
       })
       .join("");
 
-    const { object : {totalScore, categoryScores, strengths, areasForImprovement, finalAssessment} } = await generateObject({
+    const {
+      object: {
+        totalScore,
+        categoryScores,
+        strengths,
+        areasForImprovement,
+        finalAssessment,
+      },
+    } = await generateObject({
       model: google("gemini-2.0-flash-001", {
         structuredOutputs: false,
       }),
@@ -82,7 +92,6 @@ export async function createFeedBack(params: CreateFeedbackParams) {
         "You are a professional interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories",
     });
 
-
     const feedback = await db.collection("feedback").add({
       interviewId,
       userId,
@@ -92,18 +101,43 @@ export async function createFeedBack(params: CreateFeedbackParams) {
       areasForImprovement,
       finalAssessment,
       createdAt: new Date().toISOString(),
-    }) 
-
+    });
 
     return {
       success: true,
-      feedbackId : feedback.id
-    }
-
-
-
-
+      feedbackId: feedback.id,
+    };
   } catch (error) {
     console.log("Error creating feedback:", error);
+  }
+}
+
+
+export async function getFeedbackByInterviewId(
+  params: GetFeedbackByInterviewIdParams
+): Promise<Feedback | null> {
+  const { interviewId, userId = 20 } = params;
+  if (!userId) {
+    console.error("userId is null or undefined");
+    return null;
+  } 
+  try {
+    const feedback = await db
+      .collection("feedback")
+      .where("interviewId", "==", interviewId)
+      .where("userId", "==", userId)
+      .limit(1)
+      .get();
+
+      if(feedback.empty) return null;
+
+      const feedbackDoc = feedback.docs[0];
+    return {
+      id: feedbackDoc.id,
+      ...feedbackDoc.data(),
+    } as Feedback;
+  } catch (error) {
+    console.error("Error fetching feedback by interview ID:", error);
+    return null;
   }
 }
