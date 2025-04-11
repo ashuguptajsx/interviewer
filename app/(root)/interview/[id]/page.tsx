@@ -14,6 +14,7 @@ const page = async ({ params }: RouteParams) => {
   const interview = await getInterviewById(id);
   if (!interview) redirect("/");
 
+
   return (
     <>
       <div className="flex flex-row gap-4 justify-between">
@@ -24,6 +25,7 @@ const page = async ({ params }: RouteParams) => {
               alt="coverimage"
               width={40}
               height={40}
+
               className="rounded-full object-cover size-[40px]"
             />
             <h3 className="capitalize">{interview.role}</h3>
